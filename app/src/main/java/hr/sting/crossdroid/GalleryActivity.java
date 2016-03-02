@@ -107,22 +107,31 @@ public class GalleryActivity extends ActionBarActivity implements BaseSliderView
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-/*
         switch (item.getItemId()) {
-            case R.id.action_custom_indicator:
-                mDemoSlider.setCustomIndicator((PagerIndicator) findViewById(R.id.custom_indicator));
-                break;
-            case R.id.action_restore_default:
-                mDemoSlider.setPresetIndicator(SliderLayout.PresetIndicators.Center_Bottom);
-                mDemoSlider.setCustomAnimation(new DescriptionAnimation());
-                break;
-            case R.id.action_github:
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/daimajia/AndroidImageSlider"));
-                startActivity(browserIntent);
+            case R.id.action_delete_all:
+                deleteAllImages();
+                finish();
                 break;
         }
-*/
         return super.onOptionsItemSelected(item);
+    }
+
+    private void deleteAllImages() {
+        File imageDir = new File("/data/user/0/hr.sting.crossdroid/cache/");
+        if (imageDir.exists() && imageDir.isDirectory()) {
+            for (File file : imageDir.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String filename) {
+                    return filename.endsWith(".jpg");
+                }
+            })) {
+                try {
+                    FileUtils.forceDelete(file);
+                } catch (IOException e) {
+                    Log.e(MainActivity.TAG, "Error deleting file: " + file, e);
+                }
+            }
+        }
     }
 
     @Override

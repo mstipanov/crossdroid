@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         final EditText input = new EditText(this);
         input.setText(spreadsheet);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
         builder.setView(input);
 
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -110,6 +110,34 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
+    public void sendManual(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Number");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String number = input.getText().toString();
+                if (null == number || number.isEmpty()) {
+                    return;
+                }
+                sendData(number, false);
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
     public void scanToolbar(View view) {
         if (null == getSpreadsheet()) {
             Toast.makeText(MainActivity.this, "NO SPREADSHEET!", Toast.LENGTH_LONG).show();
@@ -151,37 +179,41 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-
-                String spreadsheet = getSpreadsheet();
-                if (null == spreadsheet) {
-                    return;
-                }
-
-                final String number = result.getContents();
-                if (spreadsheet.endsWith("/viewform")) {
-                    spreadsheet = spreadsheet.replace("/viewform", "/formResponse");
-                }
-
-                PostCheckpointTask task = new PostCheckpointTask(
-                        spreadsheet,
-                        new Pair<>(settings.getString("checkpointKey", ""), settings.getString("checkpoint", "1")), new Pair<>(settings.getString("brojKey", ""), number)) {
-                    @Override
-                    protected void onPostExecute(Boolean aBoolean) {
-                        super.onPostExecute(aBoolean);
-                        if (Boolean.TRUE.equals(aBoolean)) {
-                            Toast.makeText(MainActivity.this, "Checked: " + number, Toast.LENGTH_LONG).show();
-                            scanToolbar(null);
-                        } else {
-                            Toast.makeText(MainActivity.this, "ERROR SENDING: " + number, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                };
-                task.execute();
+                sendData(result.getContents(), true);
             }
         } else {
             // This is important, otherwise the result will not be passed to the fragment
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    private void sendData(final String number, final boolean scanNextOnSuccess) {
+        String spreadsheet = getSpreadsheet();
+        if (null == spreadsheet) {
+            return;
+        }
+
+        if (spreadsheet.endsWith("/viewform")) {
+            spreadsheet = spreadsheet.replace("/viewform", "/formResponse");
+        }
+
+        PostCheckpointTask task = new PostCheckpointTask(
+                spreadsheet,
+                new Pair<>(settings.getString("checkpointKey", ""), settings.getString("checkpoint", "1")), new Pair<>(settings.getString("brojKey", ""), number)) {
+            @Override
+            protected void onPostExecute(Boolean aBoolean) {
+                super.onPostExecute(aBoolean);
+                if (Boolean.TRUE.equals(aBoolean)) {
+                    Toast.makeText(MainActivity.this, "Checked: " + number, Toast.LENGTH_LONG).show();
+                    if (scanNextOnSuccess) {
+                        scanToolbar(null);
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "ERROR SENDING: " + number, Toast.LENGTH_LONG).show();
+                }
+            }
+        };
+        task.execute();
     }
 
     private String getSpreadsheet() {

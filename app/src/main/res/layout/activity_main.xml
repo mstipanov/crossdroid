@@ -35,6 +35,12 @@
         <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:text="@string/send_manual"
+                android:onClick="sendManual"/>
+
+        <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/scan_barcode"
                 android:onClick="scanToolbar"/>
 

@@ -6,6 +6,7 @@
     <string name="set_checkpoint">Checkpoint</string>
     <string name="gallery">Gallery</string>
     <string name="scan_barcode">Scan Barcode</string>
+    <string name="send_manual">Manual entry</string>
     <string name="any_orientation">1D Any Orientation</string>
     <string name="scan_from_fragment">Scan from fragment</string>
     <string name="front_camera">Front Camera</string>
