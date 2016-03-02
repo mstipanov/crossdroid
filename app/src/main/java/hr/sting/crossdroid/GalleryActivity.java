@@ -1,20 +1,13 @@
 package hr.sting.crossdroid;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 import com.daimajia.slider.library.Animations.DescriptionAnimation;
-import com.daimajia.slider.library.Indicators.PagerIndicator;
 import com.daimajia.slider.library.SliderLayout;
 import com.daimajia.slider.library.SliderTypes.BaseSliderView;
 import com.daimajia.slider.library.SliderTypes.TextSliderView;
@@ -50,11 +43,11 @@ public class GalleryActivity extends ActionBarActivity implements BaseSliderView
                 String metaName = jpegName.replace(".jpg", ".meta");
                 File metaFile = new File(file.getParentFile(), metaName);
                 String key = jpegName;
-                if(metaFile.exists()){
+                if (metaFile.exists()) {
                     try {
                         key = FileUtils.readFileToString(metaFile);
                     } catch (IOException e) {
-                        Log.e(MainActivity.TAG, "Error reading file: "+ file, e);
+                        Log.e(MainActivity.TAG, "Error reading file: " + file, e);
                     }
                 }
                 file_maps.put(key, file);

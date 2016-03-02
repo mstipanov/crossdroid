@@ -8,6 +8,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -59,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String spreadsheet = input.getText().toString();
-                saveSpreadsheet(spreadsheet);
+                validateAndSaveSpreadsheet(spreadsheet);
             }
         });
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -72,23 +73,20 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void saveSpreadsheet(String spreadsheet) {
-        SharedPreferences.Editor editor = settings.edit();
-        if (!validateSpreadsheet(spreadsheet)) {
-            Toast.makeText(MainActivity.this, "INVALID SPREADSHEET!", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        editor.putString("spreadsheet", spreadsheet);
-        editor.commit();
-    }
-
     public void setCheckpoint(View view) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Checkpoint");
 
         final EditText input = new EditText(this);
-        input.setText(String.valueOf(settings.getInt("checkpoint", 1)));
+
+        String checkpoint;
+        try {
+            checkpoint = settings.getString("checkpoint", "1");
+        } catch (Exception e) {
+            checkpoint = String.valueOf(settings.getInt("checkpoint", 1));
+        }
+
+        input.setText(checkpoint);
         input.setInputType(InputType.TYPE_CLASS_NUMBER);
         builder.setView(input);
 
@@ -96,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 SharedPreferences.Editor editor = settings.edit();
-                editor.putInt("checkpoint", Integer.parseInt(input.getText().toString()));
+                editor.putString("checkpoint", input.getText().toString());
 
                 // Commit the edits!
                 editor.commit();
@@ -139,16 +137,16 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Cancelled", Toast.LENGTH_LONG).show();
             } else {
                 Log.d(TAG, "Scanned");
-                if(null!=result.getBarcodeImagePath()){
+                if (null != result.getBarcodeImagePath()) {
                     File file = new File(result.getBarcodeImagePath());
-                    if(file.exists()){
+                    if (file.exists()) {
                         String jpegName = file.getName();
                         String metaName = jpegName.replace(".jpg", ".meta");
                         File metaFile = new File(file.getParentFile(), metaName);
                         try {
                             FileUtils.writeStringToFile(metaFile, result.getContents() + " - " + SIMPLE_DATE_FORMAT.format(new Date()));
                         } catch (IOException e) {
-                            Log.e(MainActivity.TAG, "Error saving file: "+ file, e);
+                            Log.e(MainActivity.TAG, "Error saving file: " + file, e);
                         }
                     }
                 }
@@ -159,14 +157,14 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                final int number = Integer.parseInt(result.getContents());
+                final String number = result.getContents();
                 if (spreadsheet.endsWith("/viewform")) {
                     spreadsheet = spreadsheet.replace("/viewform", "/formResponse");
                 }
 
                 PostCheckpointTask task = new PostCheckpointTask(
                         spreadsheet,
-                        settings.getInt("checkpoint", 1), number) {
+                        new Pair<>(settings.getString("checkpointKey", ""), settings.getString("checkpoint", "1")), new Pair<>(settings.getString("brojKey", ""), number)) {
                     @Override
                     protected void onPostExecute(Boolean aBoolean) {
                         super.onPostExecute(aBoolean);
@@ -198,8 +196,31 @@ public class MainActivity extends AppCompatActivity {
         editSpreadsheet(settings.getString("spreadsheet", ""));
     }
 
-    private boolean validateSpreadsheet(String spreadsheet) {
+    private void validateAndSaveSpreadsheet(final String spreadsheetUrl) {
         //TODO do it smarter, check if it actually exists, ...
-        return null != spreadsheet && spreadsheet.startsWith("https://docs.google.com/forms");
+        if (null == spreadsheetUrl || !spreadsheetUrl.startsWith("https://docs.google.com/forms") || !spreadsheetUrl.endsWith("/viewform")) {
+            Toast.makeText(MainActivity.this, "INVALID SPREADSHEET. NOT A FORM!", Toast.LENGTH_LONG).show();
+            return;
+        }
+        GetFormTask task = new GetFormTask(spreadsheetUrl) {
+            @Override
+            protected void onPostExecute(Pair<String, String> pair) {
+                if (null == pair) {
+                    Toast.makeText(MainActivity.this, "INVALID SPREADSHEET. IT MUST HAVE 'Checkpoint' AND 'Broj' PROPERTIES!", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putString("spreadsheet", spreadsheetUrl);
+                editor.putString("checkpointKey", pair.first);
+                editor.putString("brojKey", pair.second);
+                editor.commit();
+
+                Toast.makeText(MainActivity.this, "Spreadsheet saved", Toast.LENGTH_LONG).show();
+
+                super.onPostExecute(pair);
+            }
+        };
+        task.execute();
     }
 }
